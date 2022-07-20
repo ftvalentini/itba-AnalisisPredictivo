@@ -1,0 +1,352 @@
+---
+title: "Inferencia estadística"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+---
+
+```{r, message=F, warning=F}
+library(tidyverse)
+library(janitor)
+```
+
+Vamos a usar datos de pagos de Bolsa Familia de una muestra de municipios de junio de 2019.
+
+```{r}
+file = "data/working/bolsafamilia_sample_201906.csv"
+df = read_csv(file, show_col_types=F)
+```
+
+```{r}
+df %>% sample_n(3)
+```
+
+```{r}
+df %>% tabyl(municipio) %>% arrange(-n)
+```
+
+# Test de hipótesis
+
+Los tests de hipótesis (TH) nos ayudan a responder preguntas del tipo "sí/no" sobre los datos. Por ejemplo, ¿hay diferencias en las transeferencias promedio entre el municipio A y el municipio B?
+
+## Pasos
+
+Un TH consiste en los siguientes pasos:
+
+**1) Definir las hipótesis nula y alternativa**
+
+La hipótesis nula ($H_0$) representa el *status quo* o la creencia por default. 
+
+Por ejemplo, la ausencia de diferencia entre los promedios de dos grupos.
+
+La hipótesis alternativa ($H_a$) suele representar un hallazgo. Por ejemplo, que existe una diferencia entre la media de dos grupos.
+
+Los TH nos proporcionan un argumento basado en datos para rechazar $H_0$. Si rechazamos $H_0$ tenemos evidencia a favor de $H_a$. Si fallamos en rechazar $H_0$, en general no sabemos si se debe a que el tamaño de nuestra muestra era demasiado pequeño o a que $H_0$ realmente se cumple.
+
+**2) Construir un estadístico**
+
+Un estadístico (_test statistic_) es una función de los datos muestrales que resume la fuerza de la evidencia contra la hipótesis nula (la medida en que nuestros datos son consistentes o no con $H_0$).
+
+Por ejemplo, para un test de diferencias de medias podemos usar el estadístico t de Student:
+
+![Fuente: https://www.statlearning.com/](img/t-statistic.png)
+
+Un valor grande (absoluto) de T proporciona evidencia en contra de $H_0$.
+
+**3) Calcular el p-valor**
+
+El p-valor $p$ es la probabilidad de observar un estadístico igual o más extremo que el estadístico observado, bajo el supuesto de que $H_0$ es verdadera. En otras palabras, si repitiéramos el experimento muchas veces y $H_0$ es cierta, esperaríamos ver un valor tan extremo del estadístico de prueba un $100p$% de las veces. Por ende, un p-valor pequeño es evidencia en contra de $H_0$.
+
+Para obtener el p-valor es importante conocer o aproximar la distribución del estadístico del test bajo $H_0$. En el caso del test de medias, la distribución de T sigue aproximadamente una distribución $N(0,1)$ siempre que $(nt + nc − 2) \to \infty$ (¡gracias al TCL *et al*!).
+
+El p-valor es fundamental porque la mayor parte de las veces el valor de un estadístico es poco informativo per se. Una vez que sabemos qué valores son esperables del estadístico bajo $H_0$, podemos calcular $p$ -- así pasamos de un resultado en una escala poco interpretable a un número entre 0 y 1 que puede interpretarse más fácilmente.
+
+**4) Decidir si se rechaza la hipótesis nula**
+
+Si $p$ es lo suficientemente bajo podríamos rechazar $H_0$. Si definimos un umbral de $\alpha=0.05$, significa que si $H_0$ es verdadera esperaríamos ver un $p$ tan pequeño no más del 5% del tiempo. Esto es, si repetimos el experimento muchas veces, un 5% de las veces nos equivocaríamos y detectaríamos una diferencia cuando en realidad no la hay (falsos positivos o error de Tipo I) -- es decir, la tasa de falso positivo de nuestro test es menor al 5%.
+
+Alternativamente, si no rechazamos $H_0$ cuando es de hecho falsa, entonces cometemos un error de Tipo II. La potencia de un TH es la probabilidad de no cometer un error tipo II dado que se cumple $Ha$; es decir, es la probabilidad de rechazar correctamente $H_0$.
+
+En general, los errores de Tipo I se consideran como más "graves". Por lo tanto, solemos requerir una tasa de error de Tipo I baja (por ejemplo, $\alpha=0.05$ como máximo) mientras que la potencia viene dada por el tamaño muestra y la distribución de los datos. Al rechazar $H_0$ solo cuando $p < \alpha$ aseguramos que la tasa de error de tipo I sea menor o igual que $\alpha$ (ver [Bonus Track](#bonus) :D).
+
+>No es indispensable explícitamente rechazar o no la hipótesis nula. Muchas veces el p-valor es informativo _per se_.
+
+## Análisis exploratorio
+
+Analicemos los datos de pagos individuales en cada municipio:
+
+```{r}
+df_resumen = df %>% 
+  group_by(municipio) %>% 
+  summarise(media=mean(valor), sd=sd(valor), n=n()) %>% 
+  arrange(-media)
+
+df_resumen
+```
+
+```{r}
+ggplot(df_resumen) +
+  geom_point(aes(x=fct_reorder(municipio, media), y=media), size=3) + 
+  labs(x=NULL) +
+  theme_minimal() +
+  coord_flip() +
+  NULL
+```
+
+```{r, message=F}
+ggplot(df, aes(x=valor, y=municipio)) +
+  ggridges::geom_density_ridges() +
+  NULL
+```
+
+
+```{r}
+ggplot(df) +
+  geom_density(aes(x=valor, fill=municipio), alpha=.3) + 
+  labs(x=NULL) +
+  scale_x_log10() +
+  theme_minimal() +
+  NULL
+```
+
+```{r}
+ggplot(df, aes(x=municipio, y=valor)) +
+  geom_jitter(alpha=.1, size=.8) + 
+  geom_boxplot(fill="red", alpha=.4, color="forestgreen") + 
+  labs(x=NULL) +
+  scale_y_log10() +
+  coord_flip() +
+  theme_minimal() +
+  NULL
+```
+
+Supongamos que nos interesa responder si hay diferencias en el estipendio promedio entre dos municipios. Para eso podemos hacer un test de hipótesis.
+
+>En este caso tenemos la población completa de cada municipio -- entonces, ¿tiene sentido hacer un test de hipótesis?
+
+## Con una distribución teórica
+
+```{r}
+x1 = df %>% filter(municipio == "laurentino") %>% pull(valor)
+x2 = df %>% filter(municipio == "itati") %>% pull(valor)
+res_ttest = t.test(x1, x2, var.equal=F)
+
+res_ttest
+```
+Podemos graficar la distribución teórica de T bajo $H_0$:
+
+```{r}
+df_tmp = data.frame(x=c(-4, 4))
+ggplot(df_tmp, aes(x)) +
+  stat_function(fun=dt, args=list(df=res_ttest$parameter)) +
+  geom_vline(xintercept=res_ttest$statistic, size=1, color="forestgreen") +
+  theme_minimal() +
+  NULL
+```
+
+## Con permutaciones
+
+Muchos TH dependen de la disponibilidad de una distribución nula teórica para obtener un p-valor. Sin embargo, puede ocurrir que querramos conducir un TH para el cual no conocemos esta distribución. Y aún si la conocemos, muchas veces implica hacer supuestos estrictos sobre la distribución o la dimensión de nuestros datos -- si estos supuestos se violan, perdemos confianza en la distribución nula. 
+En el caso de un TH de diferencia de medias, esto puede ocurrir, por ejemplo, si el tamaño muestral no es lo suficientemente grande.
+
+Un enfoque alternativo consiste en aproximar la distribución nula del estadístico usando permutaciones. Esto nos permite evitar hacer supuestos potencialmente problemáticos sobre los datos.
+
+Supongamos que queremos evaluar la hipótesis nula de igualdad de medias $E(X) = E(Y)$. El estadístico muestral en este caso es $T = \bar{x} - \bar{y}$. 
+
+Si $H_0$ es verdadera entonces la distribución de $T$ es invariante al intercambiar observaciones de $X$ con observaciones de $Y$. Es decir, si permutamos al azar valores de $X$ con valores de $Y$ obtendríamos siempre valores similares de $T$ -- la distribución de estos datos es la misma que en los datos originales. 
+
+Entonces, para aproximar la distribución nula de $T$ podemos permutar aleatoriamente muchas veces las $n_X + n_Y$ observaciones, y en cada iteración calculamos $T_b$. Con los valores $T_b$ aproximamos la distribución nula, de modo que el p-valor se computa como la fracción de valores $T_b$ que son al menos tan extremos como el valor observado de $T$ en los datos originales.
+
+Jared Wilber ofrece [una explicación interactiva muy intuitiva](https://www.jwilber.me/permutationtest/).
+
+```{r}
+n1 = length(x1)
+n2 = length(x2)
+dif_means = mean(x1) - mean(x2)
+```
+
+```{r}
+set.seed(42)
+B = 10000
+null_dif_means = c()
+for (b in 1:B) {
+  dat = sample(c(x1, x2)) # permutacion
+  x1_ = dat[1:n1]
+  x2_ = dat[(n1 + 1):(n1 + n2)]
+  null_dif_means[b] = mean(x1_) - mean(x2_)
+}
+```
+
+```{r}
+# hacemos un test two-tailed
+pvalue_permutation = mean((abs(null_dif_means) >= abs(dif_means)))
+pvalue_permutation
+```
+
+Visualizamos la distribución nula de permutaciones y el valor observado del estadístico.
+
+```{r}
+df_tmp = data.frame(x=null_dif_means)
+ggplot(df_tmp, aes(x)) +
+  geom_density() + 
+  geom_vline(xintercept=dif_means, size=1, color="forestgreen") +
+  theme_minimal() +
+  NULL
+```
+
+En general, con tamaños de muestra pequeños o distribuciones asimétricas la diferencia entre los resultados de los dos enfoques tiende a ser más pronunciada.
+
+>Con muchos datos, el p-valor puede llegar a perder interés: en la medida en que la hipótesis nula establece la igualdad, cualquier pequeña diferencia distinta de 0 aparece como significativa -- ¡siempre vamos a obtener un p-valor bajo!. Por eso siempre es importante analizar las distribuciones y la diferencia observada _además_ del p-valor.
+
+# Bootstrap
+
+Los **intervalos de confianza (CI)** nos permiten cuantificar la **incertidumbre** asociada con un estimador. Funcionan como rangos de valores plausibles donde podría estar el verdadero valor de un parámetro.
+
+Para poder construirlos necesitamos saber cómo varía un estimador dado alrededor del parámetro cuando se calcula a partir de muchas muestras diferentes. Al igual que con los TH, en muchas ocasiones esto implica conocer la distribución teórica del estimador de interés. 
+
+Por ejemplo, para el CI de la media $E(x)$ podemos usar:
+
+$$
+\bar{x} \pm t^{\star}_{n-1} \frac{s}{\sqrt{n}}
+$$
+
+La motivación de los CI de bootstrap es similar a la de los TH de permutaciones: muchas veces es difícil computar la variabilidad o distribución de un estimador -- o tal vez la conocemos pero no estamos seguros si nuestros datos cumplen con los supuestos para que sea válida.
+
+El enfoque de bootstrap nos permite **emular el proceso de obtención de nuevas muestras**, de modo que podamos **estimar la variabilidad** de un estimador. En lugar de obtener múltiples conjuntos de datos independientes de la población, obtenemos distintos conjuntos de datos tomando muestras repetidamente del set de datos original.
+
+![Fuente: https://openintro-ims.netlify.app/](img/bootstrap.png)
+
+Específicamente, para calcular un CI (o cualquier medida de variabilidad) de un estimador $\hat{\alpha}$ de un parámetro $\alpha$ aplicamos $B$ veces el siguiente procedimiento sobre un dataset de tamaño $n$: 
+
+* Tomar aleatoriamente $n$ observaciones del dataset original, con reemplazo: este es el dataset $Z^{*i}$
+* Calcular $\hat{\alpha}^{*i}$ con el dataset $Z^{*i}$
+
+Y calculamos el CI o la medida de variabilidad con el conjunto de los valores $\hat{\alpha}^{*i}$.
+
+![Fuente: https://www.statlearning.com/](img/bootstrap_islr.png)
+
+Este procedimiento es válido porque se puede demostrar que la variabilidad de los $\hat{\alpha}^{*i}$ en torno al $\hat{\alpha}$ puntual de la muestra completa es aproximadamente la misma que la variabilidad de muchos $\hat{\alpha}$ en torno al verdadero $\alpha$.
+
+El bootstrap nos permite modelar cómo varía un estimador o estadístico de una muestra a otra. Esto se puede aplicar a una gama muy amplia de estimadores en muchísimas aplicaciones.
+
+Veamos cómo hacer IC de bootstrap sobre el pago promedio de Bolsa Familia:
+
+```{r}
+alpha_fn = function(data, index) {
+  x = data[index]
+  out = mean(x)
+  return(out)
+}
+
+boot_interval = function(data, conf_level=.95, B=2000) {
+  boot_result = boot::boot(data, alpha_fn, R=B)
+  alphas = boot_result$t
+  error_level = (1-conf_level)/2
+  cuantiles = c( error_level, 1-error_level) 
+  ci = quantile(alphas, cuantiles)
+  out = tibble("media"=boot_result$t0, "ci_inf"=ci[1], "ci_sup"=ci[2])
+  return(out)
+}
+```
+
+
+```{r}
+df_boot = df %>% 
+  group_by(municipio) %>% 
+  summarise(x = boot_interval(valor)) %>% 
+  unnest(cols=x)
+```
+
+```{r}
+df_boot
+```
+
+
+```{r}
+ggplot(df_boot, aes(y=fct_reorder(municipio, media))) +
+  geom_point(aes(x=media), size=3) + 
+  geom_errorbar(aes(xmin=ci_inf, xmax=ci_sup), size=.3, width=.2) +
+  labs(y=NULL) +
+  theme_minimal() +
+  NULL
+```
+
+Comparamos con el CI t de student.
+
+```{r}
+t_interval = function(data, conf_level=.95) {
+  t_result = t.test(data, mu=0, conf.level=conf_level)
+  ci = t_result$conf.int
+  out = tibble("media"=t_result$estimate, "ci_inf"=ci[1], "ci_sup"=ci[2])
+  return(out)
+}
+```
+
+```{r}
+df_t = df %>% 
+  group_by(municipio) %>% 
+  summarise(x = t_interval(valor)) %>% 
+  unnest(cols=x)
+```
+
+
+
+```{r}
+df_full = bind_rows(boot=df_boot, t=df_t, .id="tipo")
+
+ggplot(df_full, aes(y=fct_reorder(municipio, media), colour=tipo, group=tipo)) +
+  geom_point(aes(x=media), size=3, position=position_dodge(0.2)) + 
+  geom_errorbar(
+    aes(xmin=ci_inf, xmax=ci_sup), size=.3, width=.2, position=position_dodge(0.2)
+  ) +
+  labs(y=NULL) +
+  theme_minimal() +
+  NULL
+```
+
+**Interpretación**: el nivel de confianza determina la fracción de intervalos de confianza que esperamos capturen el verdadero valor del parámetro.
+
+# Bonus track: interpretación de un TH {#bonus}
+
+Hagamos una simulación. Vamos a probar $H_0: \mu=0$ en 1000 sets de datos.
+
+En 500 casos la $H_0$ es falsa (la verdadera media es igual a 1). En los últimos 500 casos la $H_0$ es verdadera (la verdadera media es igual a 0).
+
+```{r}
+set.seed(6)
+x = matrix(rnorm(10 * 1000, mean=0, sd=1), 10, 1000)
+x[, 1:500] = x[, 1:500] + 1
+realidad = c(rep("H0 Falsa", 500), rep("H0 Verdadera", 500))
+```
+
+Podemos correr un test t para cada conjunto de datos. Fijamos un nivel de significatividad $\alpha=0.05$: si el p-valor es menor a este umbral, rechazamos $H_0$.
+
+```{r}
+p_values = c()
+for (i in 1:1000) {
+  p_values[i] = t.test(x[,i], mu=0)$p.value
+}
+decision = rep("No rechazo H0", 1000)
+decision[p_values < .05] = "Rechazo H0"
+```
+
+Comparamos la decisión que tomamos en cada caso con la realidad.
+
+```{r}
+table(decision, realidad)
+```
+
+Vemos que con $\alpha = 0.05$ rechazamos correctamente 405/500 hipótesis nulas falsas y rechazamos incorrectamente 25/500 hipótesis nulas verdaderas. Justamente esta tasa de error de tipo I se corresponde con el umbral que fijamos: $\alpha = 0.05 = 25/500 = 0.05$ (en este caso el resultado es exacto pero podemos esperar ligeras desviaciones en una simulación).
+
+Por su parte, la potencia, que es endógena al tamaño muestral y a la variabilidad de los datos, resultó ser de $405/500=0.81$ para $H_a: \mu = 1$.
+
+> ¿Cómo varía la potencia cuando tenemos menos datos? ¿Cuando el cociente media/desvío es menor (mayor ruido y menos señal)? ¿Cuando modificamos la hipótesis alternativa?
+
+# Referencias
+
+* [Introduction to Statistical Learning](https://www.statlearning.com) 2da ed. (5.2, 13.1, 13.5.1)
+* [Speech and Language Processing](https://web.stanford.edu/~jurafsky/slp3/) 3ra ed. (4.9)
