@@ -1,0 +1,15 @@
+
+.vscode
+.RProj.user
+.Rhistory
+
+*.zip
+*.doc
+*.docx
+*.pkl
+*.ppt
+*.pptx
+
+data
+resources
+
