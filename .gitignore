@@ -2,6 +2,7 @@
 .vscode
 .RProj.user
 .Rhistory
+.ipynb_checkpoints
 
 *.zip
 *.doc
