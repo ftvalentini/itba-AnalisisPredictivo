@@ -2,6 +2,7 @@
 .vscode
 .RProj.user
 .Rhistory
+.ipynb_checkpoints
 
 *.zip
 *.doc
@@ -10,6 +11,6 @@
 *.ppt
 *.pptx
 
-data
 resources
+backup
 
