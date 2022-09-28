@@ -14,7 +14,7 @@ library(tidyverse)
 #   b2 = sample(0:1, 100, rep=T)
 # )
 
-df = read_csv("clase_03/data/data.csv")
+df = read_csv("20-correlation/data/data.csv")
 
 
 # metrics -----------------------------------------------------------------
@@ -112,7 +112,7 @@ mic_cors = function(df, col_names) {
 
 numeric_cors(df, c(names_num, names_bin), method="spearman")
 epsilon_cors(df, names_num, names_cat)
-cramer_cors(df, c(names_cat, names_bin)) # warning con conteos pequeños?
+cramer_cors(df, c(names_cat, names_bin)) # warning: chisq no es bueno con conteos pequeños
 dcor_cors(df, names_num)
 # omega_cors(df, names_num, names_cat)
 # mic_cors(df, names_num)
