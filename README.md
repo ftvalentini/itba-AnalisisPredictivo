@@ -3,7 +3,7 @@
 
 Licenciatura en Analítica Empresarial y Social, ITBA
 
-1er Cuatrimestre 2022
+2do Cuatrimestre 2022
 
 ## Contenidos
 
