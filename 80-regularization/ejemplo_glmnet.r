@@ -13,13 +13,19 @@ N = N_TRAIN + N_TEST
 
 # DGP
 df_dgp = tibble(
-  x1 = runif(N, 0, 1)
+  x1 =  runif(N, 0, 1)
   ,x2 = runif(N, 0, 1)
-  ,y = rnorm(N, 1 + 2*x1 + 2*x2, 0.25)
+  ,y =  rnorm(N, 1 + 2*x1 + 2*x2, 0.25)
 )
 
-# ggplot(df_dgp) + 
-#   geom_point(aes(x2, y))
+ggplot(df_dgp) +
+  geom_point(aes(x2, y))
+
+ggplot(df_dgp) +
+  geom_point(aes(x1, y))
+
+ggplot(df_dgp) +
+  geom_point(aes(x1, x2))
 
 # MULTICOLINEALIDAD
 
@@ -48,10 +54,15 @@ df_cor = cor(df) %>%
   arrange(-abs(cor))
 df_cor
 
+ggplot(df) +
+  geom_point(aes(x2, x2_corr_10))
+
 # train-test split
 idx_train = sample(nrow(df), N_TRAIN)
 df_train = df[idx_train,]
 df_test =  df[-idx_train,]
+
+dim(df_train)
 
 # modelo base
 mod_base = lm(y ~ x1 + x2, df_train)
@@ -61,10 +72,10 @@ pred_base = predict(mod_base, newdata=df_test)
 mod_multicol = lm(y ~ ., df_train)
 pred_multicol = predict(mod_multicol, newdata=df_test)
 
-# ridge
+# ridge (alpha=0)
 X = df_train %>% select(-y) %>% as.matrix()
 Y = df_train$y
-lambda_seq = exp(seq(-6, 4, length.out=50)) # NOTE lambda seq se elige a prueba-error
+lambda_seq = exp(seq(-4, 4, length.out=50)) # NOTE lambda seq se elige a prueba-error
 cv_ridge = glmnet::cv.glmnet(
   x=X, y=Y, alpha=0, nfolds=5, type.measure="mse", lambda=lambda_seq)
 mod_ridge = glmnet::glmnet(x=X, y=Y, alpha=0)
@@ -75,7 +86,7 @@ pred_ridge = predict(
 )
 # NOTE por default: standardize=TRUE
 
-# lasso
+# lasso (alpha=1)
 lambda_seq = exp(seq(-6, -1, length.out=50))
 cv_lasso = glmnet::cv.glmnet(
   x=X, y=Y, alpha=1, nfolds=5, type.measure="mse", lambda=lambda_seq)
@@ -122,4 +133,5 @@ df_coefs_lasso = coef(mod_lasso, s=cv_lasso$lambda.1se) %>%
   arrange(-abs(estimate))
 
 
+as.data.frame(df_coefs_ridge)
 as.data.frame(df_coefs_lasso)
