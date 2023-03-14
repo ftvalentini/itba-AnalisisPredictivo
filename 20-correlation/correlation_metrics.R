@@ -9,11 +9,14 @@ library(rstatix)
 
 n = 1000
 
+set.seed(33)
 x = runif(n, -1, 1)
-y = x + rnorm(n, 0, .5)
+y = 0 + 1*x + rnorm(n, 0, .5)
 z = sample(letters[1:4], n, rep=T)
 u = sample(letters[1:4], n, rep=T)
 df = data.frame(x, y, z, u)
+
+plot(x, y)
 
 # scatter plot ------------------------------------------------------------
 
@@ -33,8 +36,9 @@ ggplot(df) +
 
 ggplot(df, aes(x, y)) + 
   geom_jitter(aes(x, y))
-  # geom_boxplot(aes(group=cut_number(x, 10)))
-  # geom_boxplot(aes(group=cut_number(x, 10)))
+
+ggplot(df, aes(y, x)) + 
+  geom_boxplot(aes(group=cut_number(x, 10)))
 
 # pearson -----------------------------------------------------------------
 
@@ -43,6 +47,9 @@ cor(x, y, method="pearson")
 # spearman ----------------------------------------------------------------
 
 cor(x, y, method="spearman")
+
+cor(rank(x), rank(y), method="pearson")
+
 
 # dCor ----------------------------------------------------------------
 
@@ -62,10 +69,14 @@ anova_res = aov(x ~ z, df)
 anova_tab = anova_res %>% sjstats::anova_stats() 
 anova_tab$omegasq[1]
 
+ggplot(df) + 
+  geom_boxplot(aes(x=z, y=x))
+
 # EpsilonSq (Kruskal-Wallis) ----------------------------------------------
 
 res_kruskal = rstatix::kruskal_test(df, x ~ z)
-epsilon_sq = res_kruskal$statistic / ((res_kruskal$n**2 - 1) / (res_kruskal$n + 1))
+epsilon_sq = res_kruskal$statistic / 
+  ((res_kruskal$n**2 - 1) / (res_kruskal$n + 1))
 
 # Cramer's V (chi-square) ----------------------------------------------
 

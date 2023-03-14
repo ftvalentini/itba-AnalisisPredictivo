@@ -19,6 +19,7 @@ df_numeric = tibble(
 )
 idx_outliers = c(2,50,90) 
 df_numeric[idx_outliers, "x5"] = df_numeric[idx_outliers, "x5"] + 2
+df_numeric[["rank_x5"]] = rank(df_numeric[["x5"]])
 
 plot_scatter = function(df, x, y, method="pearson") {
   corr = cor(df[[x]], df[[y]], method=method) %>% round(3)
@@ -48,15 +49,21 @@ plt_6 = plot_scatter(df_numeric, "x1", "flag", method="pearson")
 plt_6
 plt_7 = plot_scatter(df_numeric, "x1", "x5", method="pearson")
 plt_7
+plt_8 = plot_scatter(df_numeric, "x1", "x5", method="spearman")
+plt_8
+plt_9 = plot_scatter(df_numeric, "rank_x1", "rank_x5", method="spearman")
+plt_9
 
 
-ggsave("clase_03/img/scatter_1.png", plt_1, width=5, height=4)
-ggsave("clase_03/img/scatter_2.png", plt_2, width=5, height=4)
-ggsave("clase_03/img/scatter_3.png", plt_3, width=5, height=4)
-ggsave("clase_03/img/scatter_4.png", plt_4, width=5, height=4)
-ggsave("clase_03/img/scatter_5.png", plt_5, width=5, height=4)
-ggsave("clase_03/img/scatter_6.png", plt_6, width=5, height=4)
-ggsave("clase_03/img/scatter_7.png", plt_7, width=5, height=4)
+ggsave("30-correlation/img/scatter_1.png", plt_1, width=5, height=4)
+ggsave("30-correlation/img/scatter_2.png", plt_2, width=5, height=4)
+ggsave("30-correlation/img/scatter_3.png", plt_3, width=5, height=4)
+ggsave("30-correlation/img/scatter_4.png", plt_4, width=5, height=4)
+ggsave("30-correlation/img/scatter_5.png", plt_5, width=5, height=4)
+ggsave("30-correlation/img/scatter_6.png", plt_6, width=5, height=4)
+ggsave("30-correlation/img/scatter_7.png", plt_7, width=5, height=4)
+ggsave("30-correlation/img/scatter_8.png", plt_8, width=5, height=4)
+ggsave("30-correlation/img/scatter_9.png", plt_9, width=5, height=4)
 
 
 df_short = data.frame(

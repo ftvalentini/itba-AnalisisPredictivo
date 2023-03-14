@@ -3,14 +3,14 @@
 
 Licenciatura en Analítica Empresarial y Social, ITBA
 
-1er Cuatrimestre 2022
+2do Cuatrimestre 2022
 
 ## Contenidos
 
 * [Introducción al aprendizaje supervisado](10-intro_supervised)
-* [Análisis exploratorio de datos](20-eda)
-* [Inferencia estadística](21-inference)
-* [Medidas de correlación](30-correlation)
+* [Medidas de correlación](20-correlation)
+* [Análisis exploratorio de datos](30-eda)
+* [Inferencia estadística](31-inference)
 * [Clustering](40-clustering)
 * [Partición train-test](41-train_test)
 * [K-Nearest Neighbors](50-knn)
