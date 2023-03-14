@@ -55,15 +55,15 @@ plt_9 = plot_scatter(df_numeric, "rank_x1", "rank_x5", method="spearman")
 plt_9
 
 
-ggsave("30-correlation/img/scatter_1.png", plt_1, width=5, height=4)
-ggsave("30-correlation/img/scatter_2.png", plt_2, width=5, height=4)
-ggsave("30-correlation/img/scatter_3.png", plt_3, width=5, height=4)
-ggsave("30-correlation/img/scatter_4.png", plt_4, width=5, height=4)
-ggsave("30-correlation/img/scatter_5.png", plt_5, width=5, height=4)
-ggsave("30-correlation/img/scatter_6.png", plt_6, width=5, height=4)
-ggsave("30-correlation/img/scatter_7.png", plt_7, width=5, height=4)
-ggsave("30-correlation/img/scatter_8.png", plt_8, width=5, height=4)
-ggsave("30-correlation/img/scatter_9.png", plt_9, width=5, height=4)
+ggsave("20-correlation/img/scatter_1.png", plt_1, width=5, height=4)
+ggsave("20-correlation/img/scatter_2.png", plt_2, width=5, height=4)
+ggsave("20-correlation/img/scatter_3.png", plt_3, width=5, height=4)
+ggsave("20-correlation/img/scatter_4.png", plt_4, width=5, height=4)
+ggsave("20-correlation/img/scatter_5.png", plt_5, width=5, height=4)
+ggsave("20-correlation/img/scatter_6.png", plt_6, width=5, height=4)
+ggsave("20-correlation/img/scatter_7.png", plt_7, width=5, height=4)
+ggsave("20-correlation/img/scatter_8.png", plt_8, width=5, height=4)
+ggsave("20-correlation/img/scatter_9.png", plt_9, width=5, height=4)
 
 
 df_short = data.frame(
@@ -73,14 +73,19 @@ df_short$rank_x = rank(df_short$x)
 df_short
 
 
-# spearman es mas robusta a outliers en cor(binaria,continua)
-cor(df_numeric$x5, df_numeric$flag, method="spearman")
-plot(rank(df_numeric$x5), rank(df_numeric$flag))
+#### spearman es mas robusta a outliers en cor(binaria,continua) ##########
 cor(df_numeric$x5, df_numeric$flag, method="pearson")
 plot(df_numeric$x5, df_numeric$flag)
+
+cor(df_numeric$x5, df_numeric$flag, method="spearman")
+cor(rank(df_numeric$x5), rank(df_numeric$flag), method="pearson") # igual
+plot(rank(df_numeric$x5), rank(df_numeric$flag))
+# el rank reduce la distancia de los outliers en la var numérica!
+
 cor(df_numeric$x5, df_numeric$flag, method="kendall") # ???
 cor(rank(df_numeric$x5), rank(df_numeric$flag))
 
+###########################################################################
 
 # anova -------------------------------------------------------------------
 
@@ -124,8 +129,8 @@ anova_table = function(df, x, y, full=F) {
 plt_anova_1 = plot_anova(df_anova, "x1", "x2")
 plt_anova_2 = plot_anova(df_anova, "x1", "x3")
 
-ggsave("clase_03/img/anova_1.png", plt_anova_1, width=6, height=3)
-ggsave("clase_03/img/anova_2.png", plt_anova_2, width=6, height=3)
+ggsave("20-correlation/img/anova_1.png", plt_anova_1, width=6, height=3)
+ggsave("20-correlation/img/anova_2.png", plt_anova_2, width=6, height=3)
 
 (tab1 = anova_table(df_anova, "x2", "x1"))
 (tab2 = anova_table(df_anova, "x3", "x1"))
@@ -252,3 +257,15 @@ energy::dcor(dfc$x, dfc$y)
 # sum(cov_matrix)
 # energy::dcov(df_a$x, df_a$y) ** 2
 
+
+# dCor vs pearson/spearman ------------------------------------------------
+
+df_tmp = df_numeric
+df_tmp = df_tmp %>% 
+  mutate(
+    x1 = runif(100, -2, 2), 
+    x2 = ifelse(x1 < 0, -x1, x1)
+  )
+
+plt_tmp = plot_scatter(df_tmp, "x1", "x2", method="spearman")
+ggsave("20-correlation/img/spearman_dcor.png", plt_tmp, width=5, height=4)

@@ -41,8 +41,8 @@ df_classification = tibble(
 )
 
 
-ggsave("clase_01/img/regression.png", plt_regression, width=4, height=4)
-ggsave("clase_01/img/classification.png", plt_classification, width=4, height=4)
+ggsave("10-intro_supervised/img/regression.png", plt_regression, width=4, height=4)
+ggsave("10-intro_supervised/img/classification.png", plt_classification, width=4, height=4)
 
 
 
@@ -94,16 +94,21 @@ plist = list(dat1, dat2, dat3, dat4) %>%
   ))
 
 for (i in 1:4) {
-  filename = paste0("clase_01/img/dgp_",i,".png")
+  filename = paste0("10-intro_supervised/img/dgp_",i,".png")
   ggsave(filename, plot=plist[[i]], width=4, height=4)
 }
 
 
 # plots estimacion --------------------------------------------------------
 
-kplot = function(data, k, plot_mu=F) { 
-  mod = kknn::kknn(y ~ x, data, data, k=k)
-  data$fitted = mod$fitted.values
+kplot = function(data, k, plot_mu=F) {
+  if (is.na(k)) {
+    mod = lm(y ~ x, data)
+    data$fitted = mod$fitted.values
+  } else {
+    mod = kknn::kknn(y ~ x, data, data, k=k)
+    data$fitted = mod$fitted.values
+  }
   g = ggplot(data, aes(x,y)) + 
     geom_point(color="navy") + 
     geom_line(aes(x,fitted), color="green", size=1) + 
@@ -124,10 +129,10 @@ dat = tibble(
 )
 
 klist = list()
-ks = c(2, 5, 50, 200)
+ks = c(2, 5, 50, NA)
 for (i in seq_along(ks)) {
   klist[[i]]= kplot(dat, ks[i], plot_mu=T)
-  filename = paste0("clase_01/img/fit_k",ks[i],".png")
+  filename = paste0("10-intro_supervised/img/fit_k",ks[i],".png")
   ggsave(filename, plot=klist[[i]], width=4, height=4)
 }
 
@@ -150,8 +155,8 @@ residuals_plot = function(data, k) {
 plt2 = residuals_plot(dat, 2)
 plt50 = residuals_plot(dat, 50)
 
-ggsave("clase_01/img/residuals_k2.png",  plot=plt2, width=6, height=4)
-ggsave("clase_01/img/residuals_k50.png", plot=plt50, width=6, height=4)
+ggsave("10-intro_supervised/img/residuals_k2.png",  plot=plt2, width=6, height=4)
+ggsave("10-intro_supervised/img/residuals_k50.png", plot=plt50, width=6, height=4)
 
        
 
