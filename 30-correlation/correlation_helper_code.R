@@ -14,7 +14,7 @@ library(tidyverse)
 #   b2 = sample(0:1, 100, rep=T)
 # )
 
-df = read_csv("20-correlation/data/data.csv")
+df = read_csv("30-correlation/data/data.csv")
 
 
 # metrics -----------------------------------------------------------------

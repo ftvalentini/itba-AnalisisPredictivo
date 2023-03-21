@@ -82,3 +82,13 @@ epsilon_sq = res_kruskal$statistic /
 
 tab = table(z, u)
 as.matrix(tab) %>% rstatix::cramer_v()
+
+# OJO CON LA AUSENCIA DE CORRELACIÓN! -------------------------------------
+
+df = datasauRus::datasaurus_dozen %>% 
+  filter(dataset == "slant_up")
+ggplot(df) + 
+  geom_point(aes(x, y), size=1) +
+  NULL
+cor(df$x, df$y, method="spearman") 
+

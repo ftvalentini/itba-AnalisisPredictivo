@@ -19,6 +19,8 @@ knitr::opts_chunk$set(echo=T)
 Vamos a explorar datos de los municipios de Brasil de 2019 de tres fuentes:
 
 * Pagos del plan Bolsa Familia del Portal de Transparencia (https://dados.gov.br/dataset/bolsa-familia-pagamentos) 
+TODO cambiar link
+
 * El [Instituto Brasileño de Geografía y Estadística](https://dados.gov.br/organization/about/instituto-brasileiro-de-geografia-e-estatistica-ibge) (IBGE)
 * El [Instituto de Investigación Económica Aplicada](https://dados.gov.br/organization/about/ipea)
 
@@ -30,6 +32,7 @@ library(skimr)
 library(GGally)
 library(ggpubr)
 
+# install.packages("remotes")
 # remotes::install_github("rpkgs/gg.layers")
 library(gg.layers)
 ```
@@ -77,6 +80,8 @@ Algunas notas sobre los datos:
 
 # Operaciones básicas 
 
+En esta sección vamos a repasar algunas operaciones básicas de R, algunas de las cuales nos van a servir para armar un dataset listo para ser explorado.
+
 Podemos usar funciones para conservar filas según algún criterio.
 
 ```{r}
@@ -95,12 +100,17 @@ ibge %>% select(municipio, vab_agro) %>% head()
 ibge %>% 
   select(-c(nome_da_grande_regiao,nome_da_unidade_da_federacao)) %>% 
   head()
-ibge %>% select(municipio) %>% sample_n(3)
-ibge["municipio"] %>% sample_n(3)
 
-ibge$municipio %>% sample(3)
-ibge %>% pull(municipio) %>% sample(3)
-ibge[["municipio"]] %>% sample(3)
+ibge %>% select(municipio) %>% head(3)
+ibge["municipio"] %>% head(3)
+ibge %>% "["("municipio") %>% head(3)
+
+ibge$municipio %>% head(3)
+ibge %>% pull(municipio) %>% head(3)
+ibge %>% "[["("municipio") %>% head(3)
+ibge[["municipio"]] %>% head(3)
+
+# en lugar de head() podemos usar sample() o sample_n()
 ```
 
 Podemos renombrar columnas:
@@ -119,9 +129,10 @@ Para normalizar o limpiar los nombres de las columnas es muy útil la función `
 
 Esta librería también tiene otras funciones muy útiles, como `remove_empty()` para eliminar filas o columnas vacías o `remove_constant()` para eliminar filas o columnas constantes.
 
-Podemos hacer un join de los datasets usando `municipio` como clave. Antes de hacerlo es conveniente revisar si hay observaciones duplicadas o si algún dataset tiene observaciones faltantes.
+Podemos hacer un **join de los datasets** usando `municipio` como clave. Antes de hacerlo es conveniente revisar si hay observaciones duplicadas o si algún dataset tiene observaciones faltantes.
 
 ## Chequeo de duplicados
+
 
 ```{r}
 dups_bolsa = bolsa %>% get_dupes("municipio")
@@ -141,16 +152,29 @@ cat(
 )
 ```
 
+```{r}
+mean(sort(munis_bolsa) == sort(munis_ibge))
+```
+
 
 ```{r}
+# intersect(munis_bolsa, munis_ibge)
 length(intersect(munis_bolsa, munis_ibge))
 ```
 
 ```{r}
 setdiff(munis_varios, munis_ibge)
 ```
+
+
 ```{r}
 setdiff(munis_ibge, munis_varios)
+```
+
+
+```{r}
+# Reduce("+", list(5, 2, 3))
+# 5+2+3
 ```
 
 
@@ -164,11 +188,11 @@ length(munis_en_comun)
 
 ---------------------------------------------------------------
 
-Hacemos el join.
+Hacemos el join. Es importante saber qué observaciones estamos conservando o eliminando en cada paso. 
 
 ```{r}
-df = ibge %>%
-  full_join(bolsa, by="municipio") %>% # 5570 municipios 
+df = bolsa %>%
+  full_join(ibge, by="municipio") %>% # 5570 municipios 
   left_join(varios, by="municipio") 
   # excluimos los que estan en varios que no estan en los otros dos (27 municipios)
 ```
@@ -186,7 +210,7 @@ df = df %>%
 
 ```{r}
 df = df %>% 
-  mutate_at(
+    mutate_at(
     vars(
       vab_agro, vab_industria, despesa_ciencia_tecnologia_2019
       ,despesa_pessoal_encargos_sociais_2019, despesa_educacao_cultura_2019
@@ -244,7 +268,8 @@ Calculamos algunas medidas de resumen, globales y por grupo:
 ```{r}
 df %>% summarise(
   suma_media = mean(suma_valor)
-  ,pop_max = max(populacao_2019, na.rm=T)
+  ,pop_max1 = max(populacao_2019)
+  ,pop_max2 = max(populacao_2019, na.rm=T)
   ,area_min = min(area_geografica_2019, na.rm=T)
 )
 ```
@@ -257,6 +282,7 @@ df %>%
 
 Las data.frames pueden estar en formato "long" o "wide": 
 
+
 ```{r}
 tab = df %>% 
   group_by(nome_uf, semiarido) %>% 
@@ -264,8 +290,23 @@ tab = df %>%
     pop = sum(populacao_2019, na.rm=T)
     ,n = n()
   ) %>% 
-  ungroup() %>% 
   arrange(-pop)
+
+tab
+
+```
+
+
+
+```{r}
+tab = df %>% 
+  group_by(nome_uf, semiarido) %>% 
+  summarise(
+    pop = sum(populacao_2019, na.rm=T)
+    ,n = n()
+  ) %>% 
+  ungroup() %>%
+  arrange(nome_uf, semiarido)
 
 tab
 ```
@@ -306,10 +347,12 @@ Vamos a suponer que nos interesa inferir o predecir el PIB a nivel municipio. Es
 **WARNING**: esto es solamente un escenario hipótetico. Si de verdad quisiéramos hacer este ejercicio deberíamos analizar muchos aspectos, como:
 
 * ¿Cómo se estima el PIB? ¿Hay algún método más simple que me permita estimar el dato sin machine learning?
-* ¿La población de municipios sin dato confiable tiene una distribución similar en sus features a la población con dato confiable? En tal caso, ¿podemos suponer que el DGP es el mismo?
-* ¿Las covariables van a estar disponibles al momento de la predicción?
+* ¿La población de municipios sin dato confiable tiene una distribución similar en sus features a la población con dato confiable? En tal caso, ¿podemos suponer que el DGP (proceso generador de datos) es el mismo?
+* ¿Los features van a estar disponibles al momento de la predicción?
 * ¿Hay otros features importantes disponibles?
 * Etc.
+
+**WARNING 2**: en este análisis nuestro objetivo es explorar y entender los datos, formular hipótesis (por ejemplo, acerca de qué features pueden ser importantes), etc.. Esto quiere decir las transformaciones que hagamos acá no necesariamente vayan a ser las mismas que apliquemos cuando entrenemos un modelo.
 
 Vamos a usar algunas funciones para tener un vistazo general de los datos.
 
@@ -322,7 +365,7 @@ skim_eda = partition(skim(df))
 names(skim_eda)
 ```
 
-Revisar [la vignette de `skimr`](https://cran.r-project.org/web/packages/skimr/vignettes/skimr.html)!
+Pueden revisar [la vignette de `skimr`](https://cran.r-project.org/web/packages/skimr/vignettes/skimr.html) para conocer más opciones.
 
 A veces es útil separar el dataset según el tipo de variables.
 
@@ -390,7 +433,9 @@ df = df %>%
   )
 ```
 
-Ahora deberíamos recalcular las variables per cápita (moraleja: ¡primero analizar NA y luego calcular variables!):
+Ahora deberíamos recalcular las variables per cápita. 
+
+Moraleja: en general es _aconsejable **primero** analizar/imputar NA y filtrar observaciones/columnas, y **luego** crear nuevas variables_ para evitar errores:
 
 ```{r}
 vars_to_recompute = vars_monetarias[
@@ -478,7 +523,13 @@ tablas$hierarquia %>%
   )
 ```
 
-¡Y aún más lindas con [`gt`](https://gt.rstudio.com/articles/intro-creating-gt-tables.html) o [`gtsummary`](https://www.danieldsjoberg.com/gtsummary/articles/tbl_summary.html)!
+¡Y aún más lindas con [`gt`](https://gt.rstudio.com/articles/intro-creating-gt-tables.html) o [`gtsummary`](https://www.danieldsjoberg.com/gtsummary/articles/tbl_summary.html).
+
+
+```{r}
+tablas$semiarido
+```
+
 
 ## Variables numéricas
 
@@ -511,7 +562,7 @@ GGally::ggcorr(
   label=T, hjust=1, label_size=2, layout.exp=10, size=3)
 ```
 
-Las correlaciones de a pares pueden ser útiles para detectar variables redundantes:
+Las correlaciones de a pares pueden ser útiles para **detectar variables redundantes**:
 
 ```{r}
 cor_matrix = cor(df_num, method="spearman", use="pairwise")
@@ -528,8 +579,8 @@ df_cor %>%
 ```
 
 
-Métodos de manejo de NA en `cor()`:
-
+>Métodos de manejo de NA en `cor()`:
+>
 * `"everything"`: usa _todas_ las observaciones (si hay NA en un par de variables, arroja NA)
 * `"pairwise"`: usa las observaciones completas de a pares (descarta las observaciones con algún NA de a pares)
 * `"complete.obs"`: usa las observaciones completas del data.frame (descarta las observaciones con algún NA considerando todas las filas)
@@ -546,6 +597,17 @@ ggplot(df, aes(x=pib_percapita)) +
 ```
 
 ```{r}
+ggplot(df, aes(x=log10(pib_percapita))) +
+  geom_histogram(alpha=0.5) +
+  NULL
+```
+
+La escala logarítmica es una escala no lineal en la que moverse una unidad implica multiplicarse por las base del logaritmo (10 o _e_, por ejemplo). $\text{log}_{10}$ mide, por ejemplo, órdenes de magnitud ($x$ difiere en un orden de magnitud de $y$ si $x$ es aproximadamente 10 veces mayor que $y$). 
+
+Entonces, la transformación logarítmica es útil cuando la variabilidad relevante está en el orden de magnitud, no en la escala original. Esto es común en el caso de variables monetarias, cuando las variaciones relevantes son porcentuales y no nominales. 
+
+
+```{r}
 ggplot(df, aes(x=log(pib_percapita), fill=semiarido)) +
   geom_histogram(alpha=0.5) +
   NULL
@@ -555,6 +617,8 @@ ggplot(df, aes(x=log(pib_percapita), fill=semiarido)) +
 ggplot(df, aes(x=log(pib_percapita), fill=semiarido)) +
   geom_density(alpha=0.5, adjust=2) +
   NULL
+# adjust determina el nivel de suavidad
+# adjust=2 --> bandas de 2 veces el ancho default
 ```
 
 ```{r}
@@ -624,11 +688,7 @@ ggplot(df,
   NULL
 ```
 
-La escala logarítmica es una escala no lineal en la que moverse una unidad implica multiplicarse por las base del logaritmo (10 o _e_, por ejemplo). $\text{log}_{10}$ mide, por ejemplo, órdenes de magnitud ($x$ difiere en un orden de magnitud de $y$ si $x$ es aproximadamente 10 veces mayor que $y$). 
-
-Entonces, la transformación logarítmica es útil cuando la variabilidad relevante está en el orden de magnitud, no en la escala original. Esto es común en el caso de variables monetarias, cuando las variaciones relevantes son porcentuales y no nominales. 
-
-Una relación lineal en un gráfico log-log implica elasticidad constante: la pendiente indica aproximadamente cuánto crece en promedio porcentualmente una variable cuando la otra crece 1%.
+Una relación lineal en un gráfico log-log implica elasticidad constante: la pendiente de un ajuste lineal indica aproximadamente cuánto crece en promedio porcentualmente una variable cuando la otra crece 1%.
 
 ```{r}
 ggplot(df, aes(x=num_beneficiarios_mean_pc, y=log10(pib_percapita))) +
@@ -664,7 +724,6 @@ ggpubr::ggscatterhist(
   # ,margin.plot="boxplot"
 ) 
 ```
-
 
 ### Barras
 
@@ -726,7 +785,6 @@ ggplot(df_tmp) +
 ```
 
 
-
 ```{r}
 # La otra manera:
 ggplot(df) +
@@ -739,117 +797,99 @@ ggplot(df) +
   NULL
 ```
 
+
 #### Para pensar
 
 Vamos a suponer momentáneamente que nuestro target es binario: PIB bajo (0) o PIB alto (1). ¿Qué tablas y visualizaciones nos pueden servir como EDA en este escenario?
 
 ```{r}
 df = df %>% 
-  mutate(target_pib = ifelse(pib_percapita > mean(pib_percapita), 1, 0))
+  mutate(target_pib = ifelse(pib_percapita > mean(pib_percapita), 1, 0)) 
+
 ```
 
-Y: target_pib
-X: ...
 
 ```{r}
 table(df$target_pib)
 ```
 
 ```{r}
-df_tmp = df %>% 
-  group_by(target_pib) %>% 
-  summarise(n = n())
-ggplot(df_tmp) +
-  geom_col(aes(x=as.factor(target_pib), y=n), alpha=0.5) +
-  NULL
+df %>% 
+  tabyl(target_pib, tipologia) %>% 
+  adorn_totals() %>% 
+  adorn_percentages("row") %>% 
+  adorn_pct_formatting() %>% 
+  adorn_ns()
 ```
 
 
+
 ```{r}
-ggplot(df, aes(x=num_beneficiarios_mean_pc, y=target_pib)) + 
+table(df$tipologia)
+```
+
+
+
+
+```{r}
+# dos variables que discriminan (entre 0s y 1s)
+ggplot(df, aes(x=log10(num_beneficiarios_mean), 
+               y=log10(vab_industria_pc),
+               color=as.factor(target_pib))
+       ) +
   geom_point(size=0.5, alpha=0.5) +
-  geom_smooth(method="lm", se=F) +
-  ylim(c(-0.05, NA)) +
   NULL
 ```
 
 
 ```{r}
-ggplot(df, aes(x=num_beneficiarios_mean_pc, fill=factor(target_pib))) +
-  geom_density(alpha=0.5, adjust=2) +
-  NULL
-```
-
-
-```{r}
-ggplot(df, aes(x=factor(target_pib), y=num_beneficiarios_mean_pc)) +
+ggplot(df, aes(x=as.factor(target_pib),
+               y=log10(vab_industria_pc))) +
   geom_boxplot() + 
   # scale_y_continuous(trans='log10') +
   # facet_wrap(~ tipologia) +
-  # theme_minimal() +
-  NULL
-```
-
-```{r}
-df$target_pib %>% mean()
-```
-
-
-```{r}
-df %>%
-  group_by(semiarido) %>% 
-  summarise(
-    promedio = mean(target_pib),
-    n = n()
-  )
-```
-
-```{r}
-table(df$target_pib)
-mean(df$target_pib) * 100
-```
-
-```{r}
-df_tmp = df %>%
-  group_by(semiarido) %>% 
-  summarise(
-    porcentaje = mean(target_pib) * 100,
-    n = n()
-  )
-
-ggplot(df_tmp) +
-  geom_col(aes(x=semiarido, y=porcentaje), alpha=0.5) +
-  geom_hline(yintercept=mean(df$target_pib) * 100, color="red",
-             linetype="dashed") +
+  theme_minimal() +
   NULL
 ```
 
 
+
+
+# Conclusiones
+
+* El EDA suele ser un proceso iterativo (explorar → transformar → explorar) que fácilmente se puede volver caótico. Por eso es importante:
+  * Tener un **plan** más o menos claro de los pasos que vamos a seguir
+  * Definir a qué **información indispensable** queremos llegar
+  * **Anotar** durante el proceso los nuevos análisis e hipótesis que se desprenden
+  * **Documentar** todo en la notebook/rmarkdown/script
+  * **Seleccionar** solamente los cuadros y gráficos relevantes para comunicar los resultados.
+* Algunos aspectos importantes a tener en cuenta antes/durante el EDA:
+  * Conocer la **fuente de los datos** y posibilidad de actualizarlos/replicarlos en el futuro
+  * Saber la **definición de las variables**
+  * Revisar registros **duplicados** / información innecesaria
+  * Ser conscientes de **qué observaciones eliminamos/conservamos** en cada paso
+  * En general es aconsejable primero "limpiar los datos" (filtrar observaciones/variables, analizar/imputar valores faltantes, consolidar tablas, etc.) antes de crear **nuevos features**
+  * Conocer la **distribución de las variables** categóricas/numéricas con estadísticos, tablas y visualizaciones, usando la escala apropiada 
+  * Conocer **cómo se relacionan las variables** entre sí, usando métricas y visualizaciones apropiadas
+  * Poner especial atención en la **distribución del target y su relación con el resto de las variables**
+  * ¿Lo que observamos es razonable? ¿Hay cosas inesperadas? ¿Hay **variables redundantes**?
+* El objetivo del EDA es entender los datos. Por lo tanto, los pasos de un EDA no necesariamente vayan a ser los mismos que apliquemos cuando entrenemos un modelo supervisado.
+
+# Bonus tracks
+
+Con `plotly::ggplotly()` podemos hacer interactivo cualquier gráfico de ggplot2.
+
 ```{r}
-
-ggplot(df, aes(x=num_beneficiarios_mean_pc, y=log10(densidad), 
-               color=as.factor(target_pib))) + 
-  geom_point(size=1.0, alpha=0.5) +
+g = ggplot(
+  df
+  ,aes(x=log(pib_percapita+1), y=log(exportacoes+1)
+       ,color=semiarido, label=municipio, label2=nome_regiao)) +
+  geom_point(alpha=0.8, size=0.8) +
+  theme_minimal() + 
   NULL
-
-
+plotly::ggplotly(g)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-...
-
-### Etc.
 
 Con `GGally::ggpairs()` podemos analizar relaciones entre variables de múltiples tipos.
 
@@ -869,17 +909,54 @@ GGally::ggpairs(
 )
 ```
 
-Con `plotly::ggplotly()` podemos hacer interactivo cualquier gráfico de ggplot2.
+
+¿Cómo generamos todos los gráficos bivariados con respecto a la variable target?
 
 ```{r}
-g = ggplot(
-  df
-  ,aes(x=log(pib_percapita+1), y=log(exportacoes+1)
-       ,color=semiarido, label=municipio, label2=nome_regiao)) +
-  geom_point(alpha=0.8, size=0.8) +
-  theme_minimal() + 
-  NULL
-plotly::ggplotly(g)
+# generamos log de todas las vars
+df_num_expanded = df_num %>%
+  mutate_all(list("log" = function(x) ifelse(x==0, 0, sign(x)*log10(abs(x))) ))
+```
+
+```{r}
+# Medimos corr en logs vs el target (equivale a spearman!)
+corr_mat = cor(
+  df_num_expanded %>% select(ends_with("_log")) %>% select(-pib_percapita_log),
+  df_num_expanded %>% select(pib_percapita_log),
+  method="pearson", use="pairwise")
+df_corr = corr_mat %>% as.data.frame()
+names(df_corr) = "correlation"
+df_corr = df_corr %>% 
+  arrange(-abs(correlation)) %>% 
+  rownames_to_column("variable")
+```
+
+
+```{r}
+# plot function
+plt_corr = function(df, variable) {
+  p = ggplot(df, aes(x=!!sym(variable), y=pib_percapita_log)) +
+    geom_jitter(size=.3, alpha=.2) +
+    geom_smooth(se=T, method="loess", size=.8, formula=y~x) +
+    labs(title=variable) +
+    theme_minimal() +
+    NULL
+  return(p)
+}
+```
+
+
+```{r}
+# lista de plots
+variables = df_corr$variable
+list_plots = map(variables, function(x) plt_corr(df_num_expanded, x))
+```
+
+
+```{r, warning=F}
+# save plots
+ggsave("output/bivariado_pib.pdf",width=6, height=6,
+       gridExtra::marrangeGrob(grobs=list_plots, nrow=2, ncol=1))
 ```
 
 ## Mapas
@@ -951,58 +1028,6 @@ df_geo = df %>%
   st_as_sf(coords=c("longitud", "latitud"), crs=4326)
 
 ggplot() + geom_sf(df_geo)
-```
-
-# Bonus track
-
-¿Cómo generamos todos los gráficos bivariados con respecto a la variable target?
-
-```{r}
-# generamos log de todas las vars
-df_num_expanded = df_num %>%
-  mutate_all(list("log" = function(x) ifelse(x==0, 0, sign(x)*log10(abs(x))) ))
-```
-
-```{r}
-# Medimos corr en logs vs el target (equivale a spearman!)
-corr_mat = cor(
-  df_num_expanded %>% select(ends_with("_log")) %>% select(-pib_percapita_log),
-  df_num_expanded %>% select(pib_percapita_log),
-  method="pearson", use="pairwise")
-df_corr = corr_mat %>% as.data.frame()
-names(df_corr) = "correlation"
-df_corr = df_corr %>% 
-  arrange(-abs(correlation)) %>% 
-  rownames_to_column("variable")
-```
-
-
-```{r}
-# plot function
-plt_corr = function(df, variable) {
-  p = ggplot(df, aes(x=!!sym(variable), y=pib_percapita_log)) +
-    geom_jitter(size=.3, alpha=.2) +
-    geom_smooth(se=T, method="loess", size=.8, formula=y~x) +
-    labs(title=variable) +
-    theme_minimal() +
-    NULL
-  return(p)
-}
-```
-
-
-```{r}
-# lista de plots
-variables = df_corr$variable
-list_plots = map(variables, function(x) plt_corr(df_num_expanded, x))
-```
-
-
-
-```{r, warning=F}
-# save plots
-ggsave("output/bivariado_pib.pdf",width=6, height=6,
-       gridExtra::marrangeGrob(grobs=list_plots, nrow=2, ncol=1))
 ```
 
 # Referencias

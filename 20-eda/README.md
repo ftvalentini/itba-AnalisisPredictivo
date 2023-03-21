@@ -1,5 +1,5 @@
 
-Clase 3
+Clase 2
 
 ## Exploratory data analysis
 

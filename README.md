@@ -8,8 +8,8 @@ Licenciatura en Analítica Empresarial y Social, ITBA
 ## Contenidos
 
 * [Introducción al aprendizaje supervisado](10-intro_supervised)
-* [Medidas de correlación](20-correlation)
-* [Análisis exploratorio de datos](30-eda)
+* [Análisis exploratorio de datos](20-eda)
+* [Medidas de correlación](30-correlation)
 * [Inferencia estadística](31-inference)
 * [Clustering](40-clustering)
 * [Partición train-test](41-train_test)
