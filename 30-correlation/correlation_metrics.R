@@ -21,7 +21,7 @@ plot(x, y)
 # scatter plot ------------------------------------------------------------
 
 ggplot(df) +
-    geom_point(aes(x,y))
+    geom_point(aes(x,y), alpha=0.5, size=0.5)
 
 # "scatter plots" (para N grande) -----------------------------------------
 
@@ -34,6 +34,7 @@ ggplot(df) +
   geom_hex(aes(x, y)) +
   scale_fill_viridis_c()
 
+# para despegar puntitos pegados:
 ggplot(df, aes(x, y)) + 
   geom_jitter(aes(x, y))
 
@@ -47,9 +48,7 @@ cor(x, y, method="pearson")
 # spearman ----------------------------------------------------------------
 
 cor(x, y, method="spearman")
-
 cor(rank(x), rank(y), method="pearson")
-
 
 # dCor ----------------------------------------------------------------
 
@@ -83,12 +82,28 @@ epsilon_sq = res_kruskal$statistic /
 tab = table(z, u)
 as.matrix(tab) %>% rstatix::cramer_v()
 
+# pvalue vs effect size ---------------------------------------------------
+
+set.seed(33)
+y_china = rnorm(n=1000000, mean=1000)
+y_taiwan = rnorm(n=800000, mean=1010)
+
+(mean(y_taiwan) / mean(y_china) - 1) * 100
+
+# H0: medias iguales
+# H1: medias difieren
+t.test(y_china, y_taiwan)
+# pvalue bajo (significativo) pero efecto pequeño (dif=1%) 
+
+
 # OJO CON LA AUSENCIA DE CORRELACIÓN! -------------------------------------
 
 df = datasauRus::datasaurus_dozen %>% 
   filter(dataset == "slant_up")
 ggplot(df) + 
   geom_point(aes(x, y), size=1) +
+  labs(x="edad", y="ingreso (target)") +
   NULL
-cor(df$x, df$y, method="spearman") 
+# x: edad, y: ingreso, color: sector_actividad
+cor(df$x, df$y, method="spearman")
 
