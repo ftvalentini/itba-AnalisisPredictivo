@@ -26,6 +26,8 @@ suppressPackageStartupMessages({
   library(amap)
   library(sf)
   library(igraph)
+  # remotes::install_github("rpkgs/gg.layers")
+  library(gg.layers)
 })
 ```
 
@@ -218,7 +220,7 @@ Recordemos además que la distancia euclidiana computa **desvíos cuadráticos**
 
 Por otra parte, vemos que las distancias pueden estar potencialmente impulsadas, para algunos pares de observaciones, por solo alguna/s variable/s muy asimétricas con outliers brutos (en este caso, la densidad y la población). Si los datos son correctos, esto no es necesariamente malo y _a priori_ no requiere ninguna corrección. 
 
-Sin embargo, una posible estrategia puede ser transformar estas variables con logaritmo antes de normalizarlas. El resultado es que los outliers no pesen tanto en el cálculo de las distancias. Hacer esto implica suponer que, para las variables transformadas, las diferencias que interesan son en el orden de magnitud, no en la escala original de la variable.
+Sin embargo, una posible estrategia puede ser transformar estas variables con **logaritmo** antes de normalizarlas. El resultado es que los outliers no pesen tanto en el cálculo de las distancias. Hacer esto implica suponer que, para las variables transformadas, las diferencias que interesan son en el **orden de magnitud**, no en la escala original de la variable.
 
 También podemos hacer un análisis más detallado de las distancias entre todos los pares de países.
 
@@ -267,7 +269,7 @@ plt =
 
 ggplotly(plt, width=860, height=450) 
 
-### con un boxplot por pais:
+### o con un boxplot por pais:
 # ggplot(dist_df, aes(x=reorder(country1, dist, mean), y=dist)) + 
 #   geom_boxplot() +
 #   theme_minimal() +
@@ -278,19 +280,6 @@ ggplotly(plt, width=860, height=450)
 
 Efectivamente algunos países son potencialmente outliers; es decir, son muy distintos del resto, tienen pocos "vecinos" (países parecidos).
 
-# Test de Hopkins
-
-Evaluamos si existe tendencia al agrupamiento usando el **test de Hopkins**.
-
-```{r hopkins}
-hopkins = factoextra::get_clust_tendency(dat_c, n=100, seed=321)
-
-cat("Hopkins =", hopkins$hopkins_stat)
-
-```
-
-Según la documentación de la función `get_clust_tendency()`, un Hopkins más alto indica mayor tendencia al clustering. En este caso, el valor del estadístico es evidentemente superior a 0.5, entonces podemos concluir que los países no están distribuidos uniformemente en el espacio de las variables. Es decir, presentan una **tendencia a agruparse**.
-
 # Clustering jerárquico
 
 Vamos a ejecutar un algoritmo de **clustering aglomerativo** usando *average linkage*.
@@ -299,7 +288,6 @@ Vamos a ejecutar un algoritmo de **clustering aglomerativo** usando *average lin
 rownames(dat_c) = dat$country
 # clustering jerarquico sin "cortar" el dendrograma
 hc = amap::hcluster(dat_c, method="manhattan", link="average")
-
 ```
 
 ## Dendrograma
@@ -312,7 +300,6 @@ grupos = ifelse(dat$country[hc$order] %in% "Argentina", 2, 1)
 colores = c("black", "red")
 # plot dendrograma
 fviz_dend(hc, horiz=T, k_colors=colores, label_cols=grupos)
-
 ```
 
 También podemos visualizar la estructura del dendrograma con un **mapa de calor**. Cada celda indica la distancia entre pares de países. Los países se ordenan según el dendrograma generado por el clustering jerárquico.
@@ -339,7 +326,6 @@ mapacalor = function(long_df) {
 } 
 
 print( mapacalor(gdat) ) 
-
 ```
 
 ```{r, fig.width=7, fig.height=4}
@@ -363,22 +349,7 @@ Un criterio posible es elegir el K a partir del cual se reduce significativament
 ```{r }
 fviz_nbclust(dat_c, FUNcluster=hcut, method="wss", k.max=20
              ,diss=dist(dat_c, method="manhattan"), hc_method="average") 
-
 ```
-
-## Gap
-
-Una forma de formalizar el criterio de "punto de quiebre" es el **Gap statistic**. Éste calcula la diferencia logarítmica entre la variabilidad intra-cluster del dataset real y datasets simulados con distribución uniforme.
-
-```{r }
-set.seed(321)
-fviz_nbclust(dat_c, FUNcluster=hcut, method="gap_stat", k.max=20
-             ,nstart=50, nboot=100
-             ,diss=dist(dat_c, method="manhattan"), hc_method="average")
-
-```
-
-El criterio indica que se debe elegir el mínimo K a partir del cual la "tasa de creciemiento" del estadístico se reduce. Sin embargo, en presencia de outliers y subclusters con distintos grados de separación, el comportamiento es no monótono, por lo cual es necesario mirar toda la curva. Para más detalles ver [el paper original](https://statweb.stanford.edu/~gwalther/gap).
 
 ## Silhouette
 
@@ -509,5 +480,37 @@ plt =
   NULL
 
 ggplotly( plt, width=800 )
+```
+
+
+# Extras
+
+## Test de Hopkins
+
+Evaluamos si existe tendencia al agrupamiento usando el **test de Hopkins**.
+
+```{r hopkins}
+hopkins = factoextra::get_clust_tendency(dat_c, n=100, seed=321)
+
+cat("Hopkins =", hopkins$hopkins_stat)
 
 ```
+
+Según la documentación de la función `get_clust_tendency()`, un Hopkins más alto indica mayor tendencia al clustering. En este caso, el valor del estadístico es evidentemente superior a 0.5, entonces podemos concluir que los países no están distribuidos uniformemente en el espacio de las variables. Es decir, presentan una **tendencia a agruparse**.
+
+
+## Gap statistic
+
+Una forma de formalizar el criterio de "punto de quiebre" es el **Gap statistic**. Éste calcula la diferencia logarítmica entre la variabilidad intra-cluster del dataset real y datasets simulados con distribución uniforme.
+
+```{r }
+set.seed(321)
+fviz_nbclust(dat_c, FUNcluster=hcut, method="gap_stat", k.max=20
+             ,nstart=50, nboot=100
+             ,diss=dist(dat_c, method="manhattan"), hc_method="average")
+
+```
+
+El criterio indica que se debe elegir el mínimo K a partir del cual la "tasa de creciemiento" del estadístico se reduce. Sin embargo, en presencia de outliers y subclusters con distintos grados de separación, el comportamiento es no monótono, por lo cual es necesario mirar toda la curva. Para más detalles ver [el paper original](https://statweb.stanford.edu/~gwalther/gap).
+
+
