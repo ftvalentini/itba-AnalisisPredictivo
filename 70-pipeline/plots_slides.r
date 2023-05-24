@@ -20,7 +20,7 @@ dat = tibble(
     geom_point(color="navy") + 
     labs(x=NULL,y=NULL)
 )
-ggsave("clase_07/img/dgp_lineal.png", plot=g_dgp, width=5, height=4)
+ggsave("70-pipeline/img/dgp_lineal.png", plot=g_dgp, width=5, height=4)
 
 # MCO
 (
@@ -31,7 +31,7 @@ ggsave("clase_07/img/dgp_lineal.png", plot=g_dgp, width=5, height=4)
     labs(x=NULL,y=NULL) +
     NULL
 )
-ggsave("clase_07/img/mco_lineal.png", plot=g_mco, width=5, height=4)
+ggsave("70-pipeline/img/mco_lineal.png", plot=g_mco, width=5, height=4)
 
 # regresion
 mod = lm(y ~ x+z, dat)
@@ -46,7 +46,7 @@ summary(mod)
     labs(x=NULL,y=NULL) +
     NULL
 )
-ggsave("clase_07/img/mco_sct.png", plot=g_sct, width=5, height=4)
+ggsave("70-pipeline/img/mco_sct.png", plot=g_sct, width=5, height=4)
 
 # categoricas
 dat_cat = dat %>% 
@@ -64,7 +64,7 @@ dat_cat = dat %>%
     NULL
   
 )
-ggsave("clase_07/img/mco_dummies.png", plot=g_cat, width=6, height=4)
+ggsave("70-pipeline/img/mco_dummies.png", plot=g_cat, width=6, height=4)
 mod = lm(y ~ x + cat, dat_cat)
 summary(mod)
 
@@ -83,7 +83,7 @@ dat_int = dat %>%
     labs(x=NULL,y=NULL) +
     NULL
 )
-ggsave("clase_07/img/mco_interacciones.png", plot=g_int, width=6, height=4)
+ggsave("70-pipeline/img/mco_interacciones.png", plot=g_int, width=6, height=4)
 mod = lm(y ~ x + cat + x:cat, dat_int)
 summary(mod)
 
@@ -105,7 +105,7 @@ dat_cuad = dat %>%
     NULL
   
 )
-ggsave("clase_07/img/mco_polinomica.png", plot=g_cuad, width=6, height=4)
+ggsave("70-pipeline/img/mco_polinomica.png", plot=g_cuad, width=6, height=4)
 mod = lm(y ~ poly(x,2), dat_cuad)
 summary(mod)
 
@@ -115,9 +115,9 @@ dat_log = dat %>%
     x =  runif(n,5,10)
     ,mu =  1*log(x)
     ,y = log(rnorm(n, mu, 0.15))
-  )
+  ) %>% mutate(x=exp(x), y=exp(y))
 (
-  g_log_bad = ggplot(dat_log, aes(exp(x), exp(y))) + 
+  g_lin_lin = ggplot(dat_log, aes(x, y)) + 
     geom_point() + 
     geom_smooth(se=F, method="lm", color="forestgreen") +
     labs(x="x",y="y") +
@@ -125,14 +125,30 @@ dat_log = dat %>%
   
 )
 (
-  g_log_good = ggplot(dat_log, aes(x, y)) + 
+  g_log_log = ggplot(dat_log, aes(log(x), log(y))) + 
     geom_point() + 
     geom_smooth(se=F, method="lm", color="forestgreen") +
     labs(x="log(x)",y="log(y)") +
     NULL
 )
-ggsave("clase_07/img/mco_log_mal.png", plot=g_log_bad, width=5, height=4)
-ggsave("clase_07/img/mco_log_bien.png", plot=g_log_good, width=5, height=4)
+(
+  g_lin_log = ggplot(dat_log, aes(log(x), y)) + 
+    geom_point() + 
+    geom_smooth(se=F, method="lm", color="forestgreen") +
+    labs(x="log(x)",y="y") +
+    NULL
+)
+# (
+#   g_lin_log = ggplot(dat_log, aes(x, log(y))) + 
+#     geom_point() + 
+#     geom_smooth(se=F, method="lm", color="forestgreen") +
+#     labs(x="x",y="log(y)") +
+#     NULL
+# )
+
+ggsave("70-pipeline/img/mco_lin_lin.png", plot=g_lin_lin, width=5, height=4)
+ggsave("70-pipeline/img/mco_lin_log.png", plot=g_lin_log, width=5, height=4)
+ggsave("70-pipeline/img/mco_log_log.png", plot=g_log_log, width=5, height=4)
 
 # residual plots
 dat_log_sq = dat %>% 
@@ -157,8 +173,8 @@ dat_log_sq = dat %>%
     geom_smooth(se=F) +
     NULL
 )
-ggsave("clase_07/img/resid_mal.png", plot=g_resid_bad, width=4, height=4)
-ggsave("clase_07/img/resid_bien.png", plot=g_resid_good, width=4, height=4)
+ggsave("70-pipeline/img/resid_mal.png", plot=g_resid_bad, width=4, height=4)
+ggsave("70-pipeline/img/resid_bien.png", plot=g_resid_good, width=4, height=4)
 
 
 

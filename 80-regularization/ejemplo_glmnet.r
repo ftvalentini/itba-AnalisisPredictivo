@@ -8,8 +8,8 @@ set.seed(666)
 
 # sample sizes
 N_TRAIN = 100
-N_TEST = 2000
-N = N_TRAIN + N_TEST
+N_VAL = 2000
+N = N_TRAIN + N_VAL
 
 # DGP
 df_dgp = tibble(
@@ -57,20 +57,20 @@ df_cor
 ggplot(df) +
   geom_point(aes(x2, x2_corr_10))
 
-# train-test split
+# train-val split
 idx_train = sample(nrow(df), N_TRAIN)
 df_train = df[idx_train,]
-df_test =  df[-idx_train,]
+df_val =  df[-idx_train,]
 
 dim(df_train)
 
 # modelo base
 mod_base = lm(y ~ x1 + x2, df_train)
-pred_base = predict(mod_base, newdata=df_test)
+pred_base = predict(mod_base, newdata=df_val)
 
 # modelo con multicolinealidad
 mod_multicol = lm(y ~ ., df_train)
-pred_multicol = predict(mod_multicol, newdata=df_test)
+pred_multicol = predict(mod_multicol, newdata=df_val)
 
 # ridge (alpha=0)
 X = df_train %>% select(-y) %>% as.matrix()
@@ -82,7 +82,7 @@ mod_ridge = glmnet::glmnet(x=X, y=Y, alpha=0)
 pred_ridge = predict(
   mod_ridge,
   s = cv_ridge$lambda.1se,
-  newx = df_test %>% select(-y) %>% as.matrix()
+  newx = df_val %>% select(-y) %>% as.matrix()
 )
 # NOTE por default: standardize=TRUE
 
@@ -94,7 +94,7 @@ mod_lasso = glmnet::glmnet(x=X, y=Y, alpha=1)
 pred_lasso = predict(
   mod_lasso,
   s = cv_lasso$lambda.1se,
-  newx = df_test %>% select(-y) %>% as.matrix()
+  newx = df_val %>% select(-y) %>% as.matrix()
 )
 
 # plot de lambda
@@ -112,10 +112,10 @@ plot(mod_lasso, xvar="lambda", label=T)
 # RMSE
 rmse = function(y, y_pred) sqrt(sum((y - y_pred)**2))
 
-rmse(df_test$y, pred_base)
-rmse(df_test$y, pred_multicol)
-rmse(df_test$y, pred_ridge)
-rmse(df_test$y, pred_lasso)
+rmse(df_val$y, pred_base)
+rmse(df_val$y, pred_multicol)
+rmse(df_val$y, pred_ridge)
+rmse(df_val$y, pred_lasso)
 
 
 # coeficientes
