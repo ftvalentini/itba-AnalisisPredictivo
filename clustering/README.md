@@ -1,6 +1,4 @@
 
-Clase 4
-
 ## Clustering
 
 * [RMarkdown](clustering.Rmd) with an application to countries data (World Bank)

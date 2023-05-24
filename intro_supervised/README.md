@@ -1,6 +1,4 @@
 
-Clase 1  
-
 ## Introduction to supervised learning
 
 * [Simulation script](overfitting_manipulate.R) to understand the bias-variance trade-off

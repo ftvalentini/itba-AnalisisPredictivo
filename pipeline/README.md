@@ -1,6 +1,4 @@
 
-Clase 7
-
 ## Featurization and sklearn pipelines
 
 * [Slides](https://docs.google.com/presentation/d/1zHYrmsFZ3HpEf672KQWY8bQ1cZmws9HSKvKo_cpM11k/edit?usp=sharing) about nonlinearities and interactions in linear models

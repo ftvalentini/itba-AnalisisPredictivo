@@ -1,6 +1,4 @@
 
-Clase 5
-
 ## K-Nearest Neighbors
 
 * [Python notebook](knn.ipynb) with an application of KNN with sklearn

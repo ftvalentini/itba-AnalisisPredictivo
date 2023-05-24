@@ -1,6 +1,4 @@
 
-Clase 3
-
 ## Correlation metrics
 
 * [R Script](correlation_metrics.R) with examples of correlation metrics

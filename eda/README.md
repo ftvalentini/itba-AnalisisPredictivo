@@ -1,6 +1,4 @@
 
-Clase 2
-
 ## Exploratory data analysis
 
 * [RMarkdown](eda.Rmd) with exploratory data analysis (EDA) of brazilian cities data

@@ -1,6 +1,4 @@
 
-Clase bonus
-
 ## Statistical inference
 
 * [RMarkdown](inferencia.Rmd) about permutation tests and bootstrap confidence intervals
