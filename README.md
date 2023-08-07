@@ -3,19 +3,22 @@
 
 Licenciatura en Analítica Empresarial y Social, ITBA
 
-2do Cuatrimestre 2022
+1er Cuatrimestre 2023
 
 ## Contenidos
 
-* [Introducción al aprendizaje supervisado](10-intro_supervised)
-* [Análisis exploratorio de datos](20-eda)
-* [Medidas de correlación](30-correlation)
-* [Inferencia estadística](31-inference)
-* [Clustering](40-clustering)
-* [Partición train-test](41-train_test)
-* [K-Nearest Neighbors](50-knn)
-* [Selección y evaluación de modelos](60-selection_evaluation)
-* [Pipelines](70-pipeline)
-* [Regularización](80-regularization)
-* [Clasificación en datos desbalanceados](90-imbalanced_clf)
-* [Clasificación multiclase](91-multiclass_clf)
+1. [Introducción al aprendizaje supervisado](intro_supervised)
+2. [Análisis exploratorio de datos](eda)
+3. [Medidas de correlación](correlation)
+4. [Clustering](clustering)
+5. [Partición train-test](train_test)
+6. [K-Nearest Neighbors](knn)
+7. [Selección y evaluación de modelos](selection_evaluation)
+8. [Pipelines](pipeline)
+9.  [Regularización](regularization)
+10. [Clasificación en datos desbalanceados](imbalanced_clf)
+11. [Clasificación multiclase](multiclass_clf)
+
+Bonus:
+
+* [Inferencia estadística](inference)
