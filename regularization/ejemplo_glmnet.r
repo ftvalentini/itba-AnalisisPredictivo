@@ -15,7 +15,7 @@ N = N_TRAIN + N_VAL
 df_dgp = tibble(
   x1 =  runif(N, 0, 1)
   ,x2 = runif(N, 0, 1)
-  ,y =  rnorm(N, 1 + 2*x1 + 2*x2, 0.25)
+  ,y =  rnorm(N, 1 + 2*x1 + 2*x2, 0.25) # y = 1 + 2*x1 + 2*x2 + rnorm(0, 0.25)
 )
 
 ggplot(df_dgp) +
@@ -75,6 +75,7 @@ pred_multicol = predict(mod_multicol, newdata=df_val)
 # ridge (alpha=0)
 X = df_train %>% select(-y) %>% as.matrix()
 Y = df_train$y
+# lambda_seq = exp(seq(2, 4, length.out=50)) # NOTE lambda seq se elige a prueba-error
 lambda_seq = exp(seq(-4, 4, length.out=50)) # NOTE lambda seq se elige a prueba-error
 cv_ridge = glmnet::cv.glmnet(
   x=X, y=Y, alpha=0, nfolds=5, type.measure="mse", lambda=lambda_seq)
