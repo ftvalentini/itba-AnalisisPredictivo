@@ -23,24 +23,6 @@ plot(x, y)
 ggplot(df) +
     geom_point(aes(x,y), alpha=0.5, size=0.5)
 
-# "scatter plots" (para N grande) -----------------------------------------
-
-ggplot(df) +
-  geom_bin2d(aes(x, y)) +
-  scale_fill_viridis_c()
-
-# install.packages("hexbin")
-ggplot(df) +
-  geom_hex(aes(x, y)) +
-  scale_fill_viridis_c()
-
-# para despegar puntitos pegados:
-ggplot(df, aes(x, y)) + 
-  geom_jitter(aes(x, y))
-
-ggplot(df, aes(y, x)) + 
-  geom_boxplot(aes(group=cut_number(x, 10)))
-
 # pearson -----------------------------------------------------------------
 
 cor(x, y, method="pearson")
